@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>JioSaavn API</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+        }
+        .route {
+            background-color: #f8f9fa;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+            border-left: 4px solid #3498db;
+        }
+        .route h3 {
+            margin-top: 0;
+            color: #2c3e50;
+        }
+        .example {
+            background-color: #e9ecef;
+            padding: 10px;
+            border-radius: 3px;
+            font-family: monospace;
+            margin: 5px 0;
+        }
+        .status {
+            text-align: center;
+            color: #27ae60;
+            font-weight: bold;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>JioSaavn API</h1>
+    <div class="status">API is running successfully!</div>
+
+    <div class="route">
+        <h3>Universal Endpoint</h3>
+        <p>Supports Song Name, Song Link, Album Link, Playlist Link</p>
+        <div class="example">http://127.0.0.1:5100/result/?query=&lt;query&gt;&lyrics=true</div>
+    </div>
+
+    <div class="route">
+        <h3>Song Search Endpoint</h3>
+        <p>Search for songs by name or URL</p>
+        <div class="example">http://127.0.0.1:5100/song/?query=&lt;query&gt;&lyrics=true</div>
+    </div>
+
+    <div class="route">
+        <h3>Playlist Endpoint</h3>
+        <p>Get playlist details by URL</p>
+        <div class="example">http://127.0.0.1:5100/playlist/?query=&lt;playlist-url&gt;&lyrics=true</div>
+    </div>
+
+    <div class="route">
+        <h3>Album Endpoint</h3>
+        <p>Get album details by URL</p>
+        <div class="example">http://127.0.0.1:5100/album/?query=&lt;album-url&gt;&lyrics=true</div>
+    </div>
+
+    <div class="route">
+        <h3>Lyrics Endpoint</h3>
+        <p>Get song lyrics by URL or ID</p>
+        <div class="example">http://127.0.0.1:5100/lyrics/?query=&lt;song-url-or-id&gt;</div>
+    </div>
+
+    <div class="route">
+        <h3>Get Song by ID</h3>
+        <p>Get song details by ID</p>
+        <div class="example">http://127.0.0.1:5100/song/get/?id=&lt;song-id&gt;&lyrics=true</div>
+    </div>
+</body>
+</html> 

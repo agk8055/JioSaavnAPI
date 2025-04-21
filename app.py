@@ -1,4 +1,4 @@
-from flask import Flask, request, redirect, jsonify, json
+from flask import Flask, request, redirect, jsonify, json, render_template
 import time
 import jiosaavn
 import os
@@ -6,13 +6,13 @@ from traceback import print_exc
 from flask_cors import CORS
 
 app = Flask(__name__)
-app.secret_key = os.environ.get("SECRET", 'thankyoutonystark#weloveyou3000')
+app.secret_key = os.environ.get("SECRET", 'jiosaavnapi_agk')
 CORS(app)
 
 
 @app.route('/')
 def home():
-    return redirect("https://cyberboysumanjay.github.io/JioSaavnAPI/")
+    return render_template('index.html')
 
 
 @app.route('/song/')
