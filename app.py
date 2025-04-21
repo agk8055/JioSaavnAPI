@@ -4,6 +4,7 @@ import jiosaavn
 import os
 from traceback import print_exc
 from flask_cors import CORS
+from waitress import serve
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET", 'jiosaavnapi_agk')
@@ -169,5 +170,5 @@ def result():
 
 
 if __name__ == '__main__':
-    app.debug = True
-    app.run(host='0.0.0.0', port=5100, use_reloader=True, threaded=True)
+    # Use Waitress for production server
+    serve(app, host='0.0.0.0', port=5100)
