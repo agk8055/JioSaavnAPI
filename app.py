@@ -5,6 +5,10 @@ import os
 from traceback import print_exc
 from flask_cors import CORS
 from waitress import serve
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET", 'jiosaavnapi_agk')
@@ -170,5 +174,9 @@ def result():
 
 
 if __name__ == '__main__':
+    # Get port from environment variable or use default
+    port = int(os.environ.get("PORT", 5100))
+    print(f"\nServer is running on http://localhost:{port}")
+    print("Press Ctrl+C to stop the server\n")
     # Use Waitress for production server
-    serve(app, host='0.0.0.0', port=5100)
+    serve(app, host='0.0.0.0', port=port)

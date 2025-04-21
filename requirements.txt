@@ -4,3 +4,4 @@ requests
 pyDes
 flask-cors
 waitress
+python-dotenv
