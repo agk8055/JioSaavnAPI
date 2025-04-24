@@ -176,7 +176,19 @@ def result():
 if __name__ == '__main__':
     # Get port from environment variable or use default
     port = int(os.environ.get("PORT", 5100))
+    
+    # Import and start the keep-alive service
+    from keep_alive import run_scheduler
+    import threading
+    
+    # Start the keep-alive service in a separate thread
+    keep_alive_thread = threading.Thread(target=run_scheduler)
+    keep_alive_thread.daemon = True
+    keep_alive_thread.start()
+    
     print(f"\nServer is running on http://localhost:{port}")
+    print("Keep-alive service is running (pings every 10 minutes)")
     print("Press Ctrl+C to stop the server\n")
+    
     # Use Waitress for production server
     serve(app, host='0.0.0.0', port=port)
