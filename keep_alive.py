@@ -1,13 +1,24 @@
 import schedule
 import time
 import threading
+import requests
+import os
 
-def print_keep_alive():
-    print(f"Keep alive - Service is running at {time.strftime('%Y-%m-%d %H:%M:%S')}")
+def ping_keep_alive():
+    try:
+        # Get the base URL from environment variable or use default
+        base_url = os.environ.get("BASE_URL", "http://localhost:5100")
+        response = requests.get(f"{base_url}/keep-alive/")
+        if response.status_code == 200:
+            print(f"Keep alive ping successful: {response.json()['message']}")
+        else:
+            print(f"Keep alive ping failed with status code: {response.status_code}")
+    except Exception as e:
+        print(f"Error in keep alive ping: {str(e)}")
 
 def run_scheduler():
-    # Schedule the message to print every 10 minutes
-    schedule.every(10).minutes.do(print_keep_alive)
+    # Schedule the ping every 10 minutes
+    schedule.every(10).minutes.do(ping_keep_alive)
     
     # Run the scheduler
     while True:
