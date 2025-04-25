@@ -6,8 +6,8 @@ import os
 
 def ping_keep_alive():
     try:
-        # Get the base URL from environment variable or use default
-        base_url = os.environ.get("BASE_URL", "http://localhost:5100")
+        # Using the JioSaavn API URL
+        base_url = "https://jiosaavnapi-bok7.onrender.com"
         response = requests.get(f"{base_url}/keep-alive/")
         if response.status_code == 200:
             print(f"Keep alive ping successful: {response.json()['message']}")
@@ -26,7 +26,7 @@ def run_scheduler():
         time.sleep(1)
 
 if __name__ == "__main__":
-    print("Starting keep-alive service...")
+    print("Starting keep-alive service for JioSaavn API...")
     # Run the scheduler in a separate thread
     scheduler_thread = threading.Thread(target=run_scheduler)
     scheduler_thread.daemon = True
