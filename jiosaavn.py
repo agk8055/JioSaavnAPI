@@ -4,39 +4,76 @@ import helper
 import json
 from traceback import print_exc
 import re
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 def search_for_song(query, lyrics, songdata):
-    if query.startswith('http') and 'saavn.com' in query:
-        id = get_song_id(query)
-        return get_song(id, lyrics)
+    try:
+        if query.startswith('http') and 'saavn.com' in query:
+            id = get_song_id(query)
+            return get_song(id, lyrics)
 
-    search_base_url = endpoints.search_base_url+query
-    response = requests.get(search_base_url).text.encode().decode('unicode-escape')
-    pattern = r'\(From "([^"]+)"\)'
-    response = json.loads(re.sub(pattern, r"(From '\1')", response))
-    song_response = response['songs']['data']
-    if not songdata:
-        return song_response
-    songs = []
-    for song in song_response:
-        id = song['id']
-        song_data = get_song(id, lyrics)
-        if song_data:
-            songs.append(song_data)
-    return songs
+        search_base_url = endpoints.search_base_url+query
+        logger.info(f"Making request to: {search_base_url}")
+        response = requests.get(search_base_url, timeout=10)
+        response.raise_for_status()  # Raise an exception for bad status codes
+        
+        response_text = response.text.encode().decode('unicode-escape')
+        pattern = r'\(From "([^"]+)"\)'
+        response_data = json.loads(re.sub(pattern, r"(From '\1')", response_text))
+        
+        if 'songs' not in response_data or 'data' not in response_data['songs']:
+            logger.error(f"Unexpected response format: {response_data}")
+            return None
+            
+        song_response = response_data['songs']['data']
+        if not songdata:
+            return song_response
+            
+        songs = []
+        for song in song_response:
+            id = song['id']
+            song_data = get_song(id, lyrics)
+            if song_data:
+                songs.append(song_data)
+        return songs
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Request error in search_for_song: {str(e)}")
+        return None
+    except json.JSONDecodeError as e:
+        logger.error(f"JSON decode error in search_for_song: {str(e)}")
+        return None
+    except Exception as e:
+        logger.error(f"Unexpected error in search_for_song: {str(e)}")
+        return None
 
 
 def get_song(id, lyrics):
     try:
         song_details_base_url = endpoints.song_details_base_url+id
-        song_response = requests.get(
-            song_details_base_url).text.encode().decode('unicode-escape')
-        song_response = json.loads(song_response)
+        logger.info(f"Making request to: {song_details_base_url}")
+        response = requests.get(song_details_base_url, timeout=10)
+        response.raise_for_status()
+        
+        response_text = response.text.encode().decode('unicode-escape')
+        song_response = json.loads(response_text)
+        
+        if id not in song_response:
+            logger.error(f"Song ID {id} not found in response")
+            return None
+            
         song_data = helper.format_song(song_response[id], lyrics)
-        if song_data:
-            return song_data
-    except:
+        return song_data
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Request error in get_song: {str(e)}")
+        return None
+    except json.JSONDecodeError as e:
+        logger.error(f"JSON decode error in get_song: {str(e)}")
+        return None
+    except Exception as e:
+        logger.error(f"Unexpected error in get_song: {str(e)}")
         return None
 
 

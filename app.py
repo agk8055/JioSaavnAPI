@@ -2,10 +2,15 @@ from flask import Flask, request, redirect, jsonify, json, render_template
 import time
 import jiosaavn
 import os
+import logging
 from traceback import print_exc
 from flask_cors import CORS
 from waitress import serve
 from dotenv import load_dotenv
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # Load environment variables from .env file
 load_dotenv()
@@ -14,6 +19,22 @@ app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET", 'jiosaavnapi_agk')
 CORS(app)
 
+# Add error handler for 500 errors
+@app.errorhandler(500)
+def internal_error(error):
+    logger.error(f"Internal Server Error: {str(error)}")
+    return jsonify({
+        "status": False,
+        "error": "Internal Server Error. Please try again later."
+    }), 500
+
+# Add error handler for 404 errors
+@app.errorhandler(404)
+def not_found_error(error):
+    return jsonify({
+        "status": False,
+        "error": "Resource not found"
+    }), 404
 
 @app.route('/')
 def home():
@@ -22,23 +43,32 @@ def home():
 
 @app.route('/song/')
 def search():
-    lyrics = False
-    songdata = True
-    query = request.args.get('query')
-    lyrics_ = request.args.get('lyrics')
-    songdata_ = request.args.get('songdata')
-    if lyrics_ and lyrics_.lower() != 'false':
-        lyrics = True
-    if songdata_ and songdata_.lower() != 'true':
-        songdata = False
-    if query:
-        return jsonify(jiosaavn.search_for_song(query, lyrics, songdata))
-    else:
-        error = {
+    try:
+        lyrics = False
+        songdata = True
+        query = request.args.get('query')
+        lyrics_ = request.args.get('lyrics')
+        songdata_ = request.args.get('songdata')
+        if lyrics_ and lyrics_.lower() != 'false':
+            lyrics = True
+        if songdata_ and songdata_.lower() != 'true':
+            songdata = False
+        if query:
+            logger.info(f"Searching for song: {query}")
+            result = jiosaavn.search_for_song(query, lyrics, songdata)
+            return jsonify(result)
+        else:
+            error = {
+                "status": False,
+                "error": 'Query is required to search songs!'
+            }
+            return jsonify(error)
+    except Exception as e:
+        logger.error(f"Error in search endpoint: {str(e)}")
+        return jsonify({
             "status": False,
-            "error": 'Query is required to search songs!'
-        }
-        return jsonify(error)
+            "error": "An error occurred while processing your request"
+        }), 500
 
 
 @app.route('/song/get/')
@@ -194,9 +224,9 @@ if __name__ == '__main__':
     keep_alive_thread.daemon = True
     keep_alive_thread.start()
     
-    print(f"\nServer is running on http://localhost:{port}")
-    print("Keep-alive service is running (pings every 10 minutes)")
-    print("Press Ctrl+C to stop the server\n")
+    logger.info(f"\nServer is running on http://localhost:{port}")
+    logger.info("Keep-alive service is running (pings every 10 minutes)")
+    logger.info("Press Ctrl+C to stop the server\n")
     
     # Use Waitress for production server
     serve(app, host='0.0.0.0', port=port)
