@@ -5,7 +5,6 @@ import os
 import logging
 from traceback import print_exc
 from flask_cors import CORS
-from waitress import serve
 from dotenv import load_dotenv
 
 # Configure logging
@@ -211,22 +210,30 @@ def keep_alive():
     })
 
 
+# Initialize keep-alive service when app starts
+def init_keep_alive():
+    try:
+        from keep_alive import run_scheduler
+        import threading
+        
+        # Start the keep-alive service in a separate thread
+        keep_alive_thread = threading.Thread(target=run_scheduler)
+        keep_alive_thread.daemon = True
+        keep_alive_thread.start()
+        logger.info("Keep-alive service initialized")
+    except Exception as e:
+        logger.error(f"Failed to initialize keep-alive service: {e}")
+
+# Initialize keep-alive when app starts
+init_keep_alive()
+
 if __name__ == '__main__':
     # Get port from environment variable or use default
     port = int(os.environ.get("PORT", 5100))
-    
-    # Import and start the keep-alive service
-    from keep_alive import run_scheduler
-    import threading
-    
-    # Start the keep-alive service in a separate thread
-    keep_alive_thread = threading.Thread(target=run_scheduler)
-    keep_alive_thread.daemon = True
-    keep_alive_thread.start()
     
     logger.info(f"\nServer is running on http://localhost:{port}")
     logger.info("Keep-alive service is running (pings every 10 minutes)")
     logger.info("Press Ctrl+C to stop the server\n")
     
-    # Use Waitress for production server
-    serve(app, host='0.0.0.0', port=port)
+    # For local development, you can still run with python app.py
+    app.run(host='0.0.0.0', port=port, debug=False)

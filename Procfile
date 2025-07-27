@@ -1,3 +1,3 @@
-web: gunicorn app:app --timeout 100 --log-file=-
+web: gunicorn -c gunicorn.conf.py app:app
 
 

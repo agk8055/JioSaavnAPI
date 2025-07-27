@@ -69,11 +69,54 @@ Enter the directory and install all the requirements using
 ```sh
 $ pip3 install -r requirements.txt
 ```
-Run the app using
+
+#### **Running the App**:
+
+**For Development (Single Process):**
 ```sh
 $ python3 app.py
 ```
-Navigate to 127.0.0.1:5000 to see the Homepage
+
+**For Production (Multi-Process with Gunicorn):**
+
+**On Unix/Linux/Mac:**
+```sh
+$ python3 start.py
+```
+or
+```sh
+$ gunicorn -c gunicorn.conf.py app:app
+```
+
+**On Windows (Development only - Gunicorn not available):**
+```sh
+$ python3 start_windows.py
+```
+or
+```sh
+$ python3 app.py
+```
+
+**Note:** Gunicorn is not available on Windows. For production deployment, use a Unix-based system or cloud platform.
+
+Navigate to 127.0.0.1:5100 to see the Homepage
+
+### **Production Deployment**:
+
+This app is configured to use **Gunicorn** for production deployment, which provides:
+
+- **Multiple Worker Processes**: Automatically scales based on CPU cores
+- **Better Concurrency**: Handles multiple users simultaneously
+- **Process Management**: Automatic worker restart on failures
+- **Request Queuing**: Efficient handling of high traffic
+- **Timeout Management**: Prevents hanging requests
+
+**Configuration Files:**
+- `gunicorn.conf.py`: Production Gunicorn configuration
+- `render.yaml`: Render.com deployment configuration
+- `Procfile`: Heroku deployment configuration
+
+**Note:** Gunicorn is not available on Windows. For local development on Windows, use the Flask development server. For production deployment, use a Unix-based system or cloud platform.
 
 ### **Usage**:
 Fetching lyrics is optional and is triggered only when it is passed as an argument in the GET Request. (**&lyrics=true**)
