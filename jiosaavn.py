@@ -77,6 +77,92 @@ def get_song(id, lyrics):
         return None
 
 
+def get_multiple_songs(song_ids, lyrics):
+    """
+    Fetch multiple songs in a single API request for better performance.
+    
+    Args:
+        song_ids (list): List of song IDs to fetch
+        lyrics (bool): Whether to include lyrics in the response
+    
+    Returns:
+        dict: Response with status and songs data
+    """
+    try:
+        if not song_ids:
+            return {
+                "status": False,
+                "error": "No song IDs provided"
+            }
+        
+        # Join song IDs with comma for the API request
+        ids_param = ','.join(song_ids)
+        song_details_base_url = endpoints.song_details_base_url + ids_param
+        
+        # Adjust timeout based on number of songs
+        base_timeout = 15
+        timeout_per_song = 0.5  # Additional seconds per song
+        dynamic_timeout = base_timeout + (len(song_ids) * timeout_per_song)
+        dynamic_timeout = min(dynamic_timeout, 60)  # Cap at 60 seconds
+        
+        logger.info(f"Making request to: {song_details_base_url}")
+        logger.info(f"Requesting {len(song_ids)} songs with {dynamic_timeout}s timeout")
+        response = requests.get(song_details_base_url, timeout=dynamic_timeout)
+        response.raise_for_status()
+        
+        response_text = response.text.encode().decode('unicode-escape')
+        songs_response = json.loads(response_text)
+        
+        songs_data = []
+        failed_ids = []
+        
+        # Process each song ID
+        for song_id in song_ids:
+            if song_id in songs_response:
+                try:
+                    song_data = helper.format_song(songs_response[song_id], lyrics)
+                    songs_data.append(song_data)
+                except Exception as e:
+                    logger.error(f"Error formatting song {song_id}: {str(e)}")
+                    failed_ids.append(song_id)
+            else:
+                logger.warning(f"Song ID {song_id} not found in response")
+                failed_ids.append(song_id)
+        
+        # Prepare response
+        result = {
+            "status": True,
+            "songs": songs_data,
+            "total_requested": len(song_ids),
+            "total_found": len(songs_data),
+            "failed_ids": failed_ids
+        }
+        
+        if failed_ids:
+            result["message"] = f"Some songs could not be fetched: {failed_ids}"
+        
+        return result
+        
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Request error in get_multiple_songs: {str(e)}")
+        return {
+            "status": False,
+            "error": f"Request failed: {str(e)}"
+        }
+    except json.JSONDecodeError as e:
+        logger.error(f"JSON decode error in get_multiple_songs: {str(e)}")
+        return {
+            "status": False,
+            "error": f"Invalid response format: {str(e)}"
+        }
+    except Exception as e:
+        logger.error(f"Unexpected error in get_multiple_songs: {str(e)}")
+        return {
+            "status": False,
+            "error": f"An unexpected error occurred: {str(e)}"
+        }
+
+
 def get_song_id(url):
     res = requests.get(url, data=[('bitrate', '320')])
     try:

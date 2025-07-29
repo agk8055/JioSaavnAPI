@@ -170,6 +170,46 @@ http://127.0.0.1:5000/song/?query=<insert-jiosaavn-song-link>&lyrics=true
 
 ---
 
+##### **Single Song by ID Endpoint**:
+```sh
+http://127.0.0.1:5000/song/get/?id=<song-id>&lyrics=true
+```
+**Example:** Navigate to http://127.0.0.1:5000/song/get/?id=-4ejJN56 to get a JSON response of song data in return.
+
+---
+
+##### **Multiple Songs by IDs Endpoint** (New - Improved Performance):
+```sh
+http://127.0.0.1:5000/song/get-multiple/?ids=<song-id1,song-id2,song-id3>&lyrics=true
+```
+**Example:** Navigate to http://127.0.0.1:5000/song/get-multiple/?ids=-4ejJN56,abc123,xyz789&lyrics=true to get a JSON response with multiple songs data in return.
+
+**Response Format:**
+```json
+{
+  "status": true,
+  "songs": [...],
+  "total_requested": 3,
+  "total_found": 2,
+  "failed_ids": ["xyz789"],
+  "message": "Some songs could not be fetched: ['xyz789']"
+}
+```
+
+**Limits and Performance:**
+- **Maximum Songs**: 100 songs per request (to ensure reliability)
+- **Recommended Range**: 10-50 songs for optimal performance
+- **Timeout**: Dynamic timeout (15s base + 0.5s per song, max 60s)
+- **URL Length**: Automatically handles URL length limits
+
+**Benefits:**
+- **Better Performance**: Single HTTP request for multiple songs instead of multiple requests
+- **Reduced Latency**: Faster response times for bulk song fetching
+- **Efficient Resource Usage**: Less server load and bandwidth consumption
+- **Smart Timeouts**: Automatic timeout adjustment based on request size
+
+---
+
 ##### **Playlist URL Endpoint**:
 ```sh
 http://127.0.0.1:5000/playlist/?query=<insert-jiosaavn-playlist-link>&lyrics=true

@@ -95,6 +95,64 @@ def get_song():
         return jsonify(error)
 
 
+@app.route('/song/get-multiple/')
+def get_multiple_songs():
+    try:
+        lyrics = False
+        ids = request.args.get('ids')
+        lyrics_ = request.args.get('lyrics')
+        
+        if lyrics_ and lyrics_.lower() != 'false':
+            lyrics = True
+            
+        if not ids:
+            error = {
+                "status": False,
+                "error": 'Song IDs are required! Please provide comma-separated IDs in the "ids" parameter.'
+            }
+            return jsonify(error)
+        
+        # Split the IDs by comma and clean them
+        song_ids = [id.strip() for id in ids.split(',') if id.strip()]
+        
+        if not song_ids:
+            error = {
+                "status": False,
+                "error": 'No valid song IDs provided!'
+            }
+            return jsonify(error)
+        
+        # Add practical limits
+        MAX_SONGS = 100  # Maximum number of songs per request
+        if len(song_ids) > MAX_SONGS:
+            error = {
+                "status": False,
+                "error": f'Too many song IDs! Maximum {MAX_SONGS} songs allowed per request. You provided {len(song_ids)} songs.'
+            }
+            return jsonify(error)
+        
+        logger.info(f"Fetching multiple songs: {len(song_ids)} songs")
+        
+        # Get songs data using the new function
+        songs_data = jiosaavn.get_multiple_songs(song_ids, lyrics)
+        
+        if not songs_data:
+            error = {
+                "status": False,
+                "error": 'Failed to fetch songs data!'
+            }
+            return jsonify(error)
+        
+        return jsonify(songs_data)
+        
+    except Exception as e:
+        logger.error(f"Error in get_multiple_songs endpoint: {str(e)}")
+        return jsonify({
+            "status": False,
+            "error": "An error occurred while processing your request"
+        }), 500
+
+
 @app.route('/playlist/')
 def playlist():
     lyrics = False
