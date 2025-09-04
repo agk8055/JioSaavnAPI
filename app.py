@@ -353,6 +353,48 @@ def search_playlists_route():
         }), 500
 
 
+@app.route('/search/albums/')
+def search_albums_route():
+    try:
+        query = request.args.get('query')
+        if not query:
+            return jsonify({
+                "success": False,
+                "error": 'Query is required!'
+            }), 400
+        logger.info(f"Search albums for: {query}")
+        result = jiosaavn.search_albums(query)
+        status_code = result.get('status') or (200 if result.get('success') else 500)
+        return jsonify(result), status_code
+    except Exception as e:
+        logger.error(f"Error in search_albums_route: {str(e)}")
+        return jsonify({
+            "success": False,
+            "error": 'An error occurred while processing your request'
+        }), 500
+
+
+@app.route('/search/artists/')
+def search_artists_route():
+    try:
+        query = request.args.get('query')
+        if not query:
+            return jsonify({
+                "success": False,
+                "error": 'Query is required!'
+            }), 400
+        logger.info(f"Search artists for: {query}")
+        result = jiosaavn.search_artists(query)
+        status_code = result.get('status') or (200 if result.get('success') else 500)
+        return jsonify(result), status_code
+    except Exception as e:
+        logger.error(f"Error in search_artists_route: {str(e)}")
+        return jsonify({
+            "success": False,
+            "error": 'An error occurred while processing your request'
+        }), 500
+
+
 # Initialize keep-alive service when app starts
 def init_keep_alive():
     try:

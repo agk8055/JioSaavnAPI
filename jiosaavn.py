@@ -599,3 +599,112 @@ def search_playlists(query):
     except Exception as e:
         logger.error(f"Unexpected error in search_playlists: {str(e)}")
         return {"success": False, "error": "An unexpected error occurred"}
+
+
+def search_albums(query):
+    """Search albums by query, collapse image to best URL, reduce artists to primary names string, rename url to album_url."""
+    if not query:
+        return {"success": False, "error": "Query is required"}
+    try:
+        url = endpoints.album_search_base_url + query
+        logger.info(f"Making request to: {url}")
+        response = requests.get(url, timeout=15)
+        response.raise_for_status()
+        data = response.json()
+        if not isinstance(data, dict):
+            return {"success": False, "error": "Invalid response"}
+        payload = (data or {}).get('data') or {}
+        results = payload.get('results') or []
+        normalized = []
+        for item in results:
+            obj = dict(item)
+            # primaryartist string
+            try:
+                artists_block = obj.get('artists') or {}
+                primary_list = artists_block.get('primary') or []
+                names = []
+                for a in primary_list:
+                    name = (a or {}).get('name')
+                    if name:
+                        names.append(name)
+                if names:
+                    obj['primaryartist'] = ', '.join(names)
+                if 'artists' in obj:
+                    del obj['artists']
+            except Exception:
+                if 'artists' in obj:
+                    try:
+                        del obj['artists']
+                    except Exception:
+                        pass
+            # image collapse
+            img = _select_highest_quality_image(obj.get('image'))
+            if img:
+                obj['image'] = img.get('url') if isinstance(img, dict) else img
+            # rename url
+            try:
+                if 'url' in obj and 'album_url' not in obj:
+                    obj['album_url'] = obj.get('url')
+                    del obj['url']
+            except Exception:
+                pass
+            normalized.append(obj)
+        return {
+            "success": bool(data.get('success', True)),
+            "data": {
+                "total": payload.get('total'),
+                "start": payload.get('start'),
+                "results": normalized
+            }
+        }
+    except requests.exceptions.HTTPError as e:
+        status = getattr(e.response, 'status_code', None)
+        logger.error(f"Request error in search_albums: {str(e)}")
+        return {"success": False, "error": f"Request failed: {str(e)}", "status": status}
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Request error in search_albums: {str(e)}")
+        return {"success": False, "error": f"Request failed: {str(e)}"}
+    except Exception as e:
+        logger.error(f"Unexpected error in search_albums: {str(e)}")
+        return {"success": False, "error": "An unexpected error occurred"}
+
+
+def search_artists(query):
+    """Search artists by query, collapse image to best URL string."""
+    if not query:
+        return {"success": False, "error": "Query is required"}
+    try:
+        url = endpoints.artist_search_base_url + query
+        logger.info(f"Making request to: {url}")
+        response = requests.get(url, timeout=15)
+        response.raise_for_status()
+        data = response.json()
+        if not isinstance(data, dict):
+            return {"success": False, "error": "Invalid response"}
+        payload = (data or {}).get('data') or {}
+        results = payload.get('results') or []
+        normalized = []
+        for item in results:
+            obj = dict(item)
+            img = _select_highest_quality_image(obj.get('image'))
+            if img:
+                obj['image'] = img.get('url') if isinstance(img, dict) else img
+            normalized.append(obj)
+        return {
+            "success": bool(data.get('success', True)),
+            "data": {
+                "total": payload.get('total'),
+                "start": payload.get('start'),
+                "results": normalized
+            }
+        }
+    except requests.exceptions.HTTPError as e:
+        status = getattr(e.response, 'status_code', None)
+        logger.error(f"Request error in search_artists: {str(e)}")
+        return {"success": False, "error": f"Request failed: {str(e)}", "status": status}
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Request error in search_artists: {str(e)}")
+        return {"success": False, "error": f"Request failed: {str(e)}"}
+    except Exception as e:
+        logger.error(f"Unexpected error in search_artists: {str(e)}")
+        return {"success": False, "error": "An unexpected error occurred"}

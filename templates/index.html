@@ -87,5 +87,41 @@
         <p><strong>Benefits:</strong> Single HTTP request instead of multiple requests, faster response times, efficient resource usage</p>
         <p><strong>Limits:</strong> Maximum 100 songs per request, recommended 10-50 songs for optimal performance</p>
     </div>
+
+    <div class="route">
+        <h3>Global Search (Songs, Albums, Playlists, Artists)</h3>
+        <p>Search across all entities and get the most relevant topQuery</p>
+        <div class="example">https://jiosaavnapi-bok7.onrender.com/search/?query=&lt;query&gt;</div>
+    </div>
+
+    <div class="route">
+        <h3>Artist Details</h3>
+        <p>Fetch artist profile, top songs, top albums, and similar artists</p>
+        <div class="example">https://jiosaavnapi-bok7.onrender.com/artist/?id=&lt;artist-id&gt;</div>
+    </div>
+
+    <div class="route">
+        <h3>Song Recommendations</h3>
+        <p>Get suggested songs for a given song ID</p>
+        <div class="example">https://jiosaavnapi-bok7.onrender.com/song/suggestions/?id=&lt;song-id&gt;</div>
+    </div>
+
+    <div class="route">
+        <h3>Search Playlists</h3>
+        <p>Find playlists by query (returns best image and playlist_url)</p>
+        <div class="example">https://jiosaavnapi-bok7.onrender.com/search/playlists/?query=&lt;query&gt;</div>
+    </div>
+
+    <div class="route">
+        <h3>Search Albums</h3>
+        <p>Find albums by query (returns best image, primaryartist, and album_url)</p>
+        <div class="example">https://jiosaavnapi-bok7.onrender.com/search/albums/?query=&lt;query&gt;</div>
+    </div>
+
+    <div class="route">
+        <h3>Search Artists</h3>
+        <p>Find artists by query (returns best image)</p>
+        <div class="example">https://jiosaavnapi-bok7.onrender.com/search/artists/?query=&lt;query&gt;</div>
+    </div>
 </body>
 </html> 

@@ -17,3 +17,9 @@ song_suggestions_base_url = "https://jiosaavn-api-eight-brown.vercel.app/api/son
 
 # Playlist search (Cloudflare Worker) endpoint
 playlist_search_base_url = "https://jiosaavn-api.alangeokurian10.workers.dev/api/search/playlists?query="
+
+# Album search (Cloudflare Worker) endpoint
+album_search_base_url = "https://jiosaavn-api.alangeokurian10.workers.dev/api/search/albums?query="
+
+# Artist search (Cloudflare Worker) endpoint
+artist_search_base_url = "https://jiosaavn-api.alangeokurian10.workers.dev/api/search/artists?query="
