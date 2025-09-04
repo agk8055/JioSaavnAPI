@@ -5,3 +5,12 @@ album_details_base_url = "https://www.jiosaavn.com/api.php?__call=content.getAlb
 playlist_details_base_url = "https://www.jiosaavn.com/api.php?__call=playlist.getDetails&_format=json&cc=in&_marker=0%3F_marker%3D0&listid="
 
 lyrics_base_url = "https://www.jiosaavn.com/api.php?__call=lyrics.getLyrics&ctx=web6dot0&api_version=4&_format=json&_marker=0%3F_marker%3D0&lyrics_id="
+
+# Global search (Cloudflare Worker) endpoint
+global_search_base_url = "https://jiosaavn-api.alangeokurian10.workers.dev/api/search?query="
+
+# Artist details (Cloudflare Worker) endpoint
+artist_details_base_url = "https://jiosaavn-api.alangeokurian10.workers.dev/api/artists/"
+
+# Song suggestions (Vercel) endpoint
+song_suggestions_base_url = "https://jiosaavn-api-eight-brown.vercel.app/api/songs/"

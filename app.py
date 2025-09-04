@@ -268,6 +268,69 @@ def keep_alive():
     })
 
 
+@app.route('/search/')
+def global_search_route():
+    try:
+        query = request.args.get('query')
+        if not query:
+            return jsonify({
+                "success": False,
+                "error": 'Query is required to search!'
+            }), 400
+        logger.info(f"Global search for: {query}")
+        result = jiosaavn.global_search(query)
+        status_code = 200 if result.get('success') else 500
+        return jsonify(result), status_code
+    except Exception as e:
+        logger.error(f"Error in global_search_route: {str(e)}")
+        return jsonify({
+            "success": False,
+            "error": 'An error occurred while processing your request'
+        }), 500
+
+
+@app.route('/artist/')
+def artist_details_route():
+    try:
+        artist_id = request.args.get('id')
+        if not artist_id:
+            return jsonify({
+                "success": False,
+                "error": 'Artist id is required!'
+            }), 400
+        logger.info(f"Artist details for: {artist_id}")
+        result = jiosaavn.get_artist_details(artist_id)
+        status_code = 200 if result.get('success') else 500
+        return jsonify(result), status_code
+    except Exception as e:
+        logger.error(f"Error in artist_details_route: {str(e)}")
+        return jsonify({
+            "success": False,
+            "error": 'An error occurred while processing your request'
+        }), 500
+
+
+@app.route('/song/suggestions/')
+def song_suggestions_route():
+    try:
+        song_id = request.args.get('id')
+        if not song_id:
+            return jsonify({
+                "success": False,
+                "error": 'Song id is required!'
+            }), 400
+        logger.info(f"Song suggestions for: {song_id}")
+        result = jiosaavn.get_song_suggestions(song_id)
+        status_code = 200 if result.get('success') else 500
+        return jsonify(result), status_code
+    except Exception as e:
+        logger.error(f"Error in song_suggestions_route: {str(e)}")
+        return jsonify({
+            "success": False,
+            "error": 'An error occurred while processing your request'
+        }), 500
+
+
 # Initialize keep-alive service when app starts
 def init_keep_alive():
     try:

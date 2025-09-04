@@ -7,7 +7,7 @@ import os
 def ping_keep_alive():
     try:
         # Using the JioSaavn API URL
-        base_url = "https://jiosaavnapi-bok7.onrender.com"
+        base_url = "https://jiosaavnapi-tyye.onrender.com"
         response = requests.get(f"{base_url}/keep-alive/")
         if response.status_code == 200:
             print(f"Keep alive ping successful: {response.json()['message']}")
