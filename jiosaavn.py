@@ -551,3 +551,51 @@ def get_song_suggestions(song_id):
     except Exception as e:
         logger.error(f"Unexpected error in get_song_suggestions: {str(e)}")
         return {"success": False, "error": "An unexpected error occurred"}
+
+
+def search_playlists(query):
+    """Search playlists by query and collapse images to best URL string."""
+    if not query:
+        return {"success": False, "error": "Query is required"}
+    try:
+        url = endpoints.playlist_search_base_url + query
+        logger.info(f"Making request to: {url}")
+        response = requests.get(url, timeout=15)
+        response.raise_for_status()
+        data = response.json()
+        if not isinstance(data, dict):
+            return {"success": False, "error": "Invalid response"}
+        payload = (data or {}).get('data') or {}
+        results = payload.get('results') or []
+        normalized = []
+        for item in results:
+            obj = dict(item)
+            img = _select_highest_quality_image(obj.get('image'))
+            if img:
+                obj['image'] = img.get('url') if isinstance(img, dict) else img
+            # Rename url -> playlist_url
+            try:
+                if 'url' in obj and 'playlist_url' not in obj:
+                    obj['playlist_url'] = obj.get('url')
+                    del obj['url']
+            except Exception:
+                pass
+            normalized.append(obj)
+        return {
+            "success": bool(data.get('success', True)),
+            "data": {
+                "total": payload.get('total'),
+                "start": payload.get('start'),
+                "results": normalized
+            }
+        }
+    except requests.exceptions.HTTPError as e:
+        status = getattr(e.response, 'status_code', None)
+        logger.error(f"Request error in search_playlists: {str(e)}")
+        return {"success": False, "error": f"Request failed: {str(e)}", "status": status}
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Request error in search_playlists: {str(e)}")
+        return {"success": False, "error": f"Request failed: {str(e)}"}
+    except Exception as e:
+        logger.error(f"Unexpected error in search_playlists: {str(e)}")
+        return {"success": False, "error": "An unexpected error occurred"}

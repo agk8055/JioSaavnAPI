@@ -331,6 +331,28 @@ def song_suggestions_route():
         }), 500
 
 
+@app.route('/search/playlists/')
+def search_playlists_route():
+    try:
+        query = request.args.get('query')
+        if not query:
+            return jsonify({
+                "success": False,
+                "error": 'Query is required!'
+            }), 400
+        logger.info(f"Search playlists for: {query}")
+        result = jiosaavn.search_playlists(query)
+        # If upstream returned an HTTP status, prefer that; otherwise map success
+        status_code = result.get('status') or (200 if result.get('success') else 500)
+        return jsonify(result), status_code
+    except Exception as e:
+        logger.error(f"Error in search_playlists_route: {str(e)}")
+        return jsonify({
+            "success": False,
+            "error": 'An error occurred while processing your request'
+        }), 500
+
+
 # Initialize keep-alive service when app starts
 def init_keep_alive():
     try:
