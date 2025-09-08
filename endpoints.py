@@ -7,7 +7,7 @@ playlist_details_base_url = "https://www.jiosaavn.com/api.php?__call=playlist.ge
 lyrics_base_url = "https://www.jiosaavn.com/api.php?__call=lyrics.getLyrics&ctx=web6dot0&api_version=4&_format=json&_marker=0%3F_marker%3D0&lyrics_id="
 
 # Global search (Cloudflare Worker) endpoint
-global_search_base_url = "https://jiosaavn-api.alangeokurian10.workers.dev/api/search?query="
+global_search_base_url = "https://jiosaavn-api-eight-brown.vercel.app/api/search?query="
 
 # Artist details (Cloudflare Worker) endpoint
 artist_details_base_url = "https://jiosaavn-api.alangeokurian10.workers.dev/api/artists/"
