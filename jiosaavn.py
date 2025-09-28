@@ -218,6 +218,27 @@ def get_album_by_link(album_link, lyrics):
             except Exception:
                 pass
 
+        # Rename root keys: name -> album, primaryartist -> primary_artists
+        try:
+            if 'name' in payload and 'album' not in payload:
+                payload['album'] = payload.get('name')
+                del payload['name']
+        except Exception:
+            pass
+        try:
+            if 'primaryartist' in payload and 'primary_artists' not in payload:
+                payload['primary_artists'] = payload.get('primaryartist')
+                del payload['primaryartist']
+        except Exception:
+            pass
+        # Rename root url -> album_url
+        try:
+            if 'url' in payload and 'album_url' not in payload:
+                payload['album_url'] = payload.get('url')
+                del payload['url']
+        except Exception:
+            pass
+
         # Songs normalization
         songs = payload.get('songs') or []
         normalized_songs = []
@@ -260,6 +281,26 @@ def get_album_by_link(album_link, lyrics):
             try:
                 if 'album' in song:
                     del song['album']
+            except Exception:
+                pass
+            # Rename url -> perma_url
+            try:
+                if 'url' in song and 'perma_url' not in song:
+                    song['perma_url'] = song.get('url')
+                    del song['url']
+            except Exception:
+                pass
+            # Rename song keys: name -> song, primaryartist -> primary_artists
+            try:
+                if 'name' in song and 'song' not in song:
+                    song['song'] = song.get('name')
+                    del song['name']
+            except Exception:
+                pass
+            try:
+                if 'primaryartist' in song and 'primary_artists' not in song:
+                    song['primary_artists'] = song.get('primaryartist')
+                    del song['primaryartist']
             except Exception:
                 pass
             normalized_songs.append(song)
@@ -837,6 +878,26 @@ def get_artist_songs(artist_id, sort_by="latest", sort_order="desc"):
                     del song_obj['album']
             except Exception:
                 pass
+            # Rename url -> perma_url
+            try:
+                if 'url' in song_obj and 'perma_url' not in song_obj:
+                    song_obj['perma_url'] = song_obj.get('url')
+                    del song_obj['url']
+            except Exception:
+                pass
+            # Rename keys: name -> song, primaryartist -> primary_artists
+            try:
+                if 'name' in song_obj and 'song' not in song_obj:
+                    song_obj['song'] = song_obj.get('name')
+                    del song_obj['name']
+            except Exception:
+                pass
+            try:
+                if 'primaryartist' in song_obj and 'primary_artists' not in song_obj:
+                    song_obj['primary_artists'] = song_obj.get('primaryartist')
+                    del song_obj['primaryartist']
+            except Exception:
+                pass
             
             normalized_songs.append(song_obj)
         
@@ -913,6 +974,20 @@ def get_artist_albums(artist_id, sort_by="latest", sort_order="desc"):
                 if 'url' in obj and 'album_url' not in obj:
                     obj['album_url'] = obj.get('url')
                     del obj['url']
+            except Exception:
+                pass
+
+            # Rename keys: name -> album, primaryartist -> primary_artists
+            try:
+                if 'name' in obj and 'album' not in obj:
+                    obj['album'] = obj.get('name')
+                    del obj['name']
+            except Exception:
+                pass
+            try:
+                if 'primaryartist' in obj and 'primary_artists' not in obj:
+                    obj['primary_artists'] = obj.get('primaryartist')
+                    del obj['primaryartist']
             except Exception:
                 pass
 
