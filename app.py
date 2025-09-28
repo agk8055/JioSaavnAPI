@@ -180,15 +180,16 @@ def album():
     if lyrics_ and lyrics_.lower() != 'false':
         lyrics = True
     if query:
-        id = jiosaavn.get_album_id(query)
-        songs = jiosaavn.get_album(id, lyrics)
-        return jsonify(songs)
+        # Query is expected to be an album link. Use saavn.dev adapter
+        result = jiosaavn.get_album_by_link(query, lyrics)
+        status_code = 200 if result and result.get('success') else 500
+        return jsonify(result), status_code
     else:
         error = {
-            "status": False,
-            "error": 'Query is required to search albums!'
+            "success": False,
+            "error": 'Query (album link) is required to fetch album!'
         }
-        return jsonify(error)
+        return jsonify(error), 400
 
 
 @app.route('/lyrics/')
@@ -240,9 +241,8 @@ def result():
 
         elif '/album/' in query:
             print("Album")
-            id = jiosaavn.get_album_id(query)
-            songs = jiosaavn.get_album(id, lyrics)
-            return jsonify(songs)
+            result = jiosaavn.get_album_by_link(query, lyrics)
+            return jsonify(result)
 
         elif '/playlist/' or '/featured/' in query:
             print("Playlist")
@@ -389,6 +389,56 @@ def search_artists_route():
         return jsonify(result), status_code
     except Exception as e:
         logger.error(f"Error in search_artists_route: {str(e)}")
+        return jsonify({
+            "success": False,
+            "error": 'An error occurred while processing your request'
+        }), 500
+
+
+@app.route('/artist/songs/')
+def artist_songs_route():
+    try:
+        artist_id = request.args.get('id')
+        sort_by = request.args.get('sortBy', 'latest')
+        sort_order = request.args.get('sortOrder', 'desc')
+        
+        if not artist_id:
+            return jsonify({
+                "success": False,
+                "error": 'Artist ID is required!'
+            }), 400
+        
+        logger.info(f"Artist songs for: {artist_id}, sortBy: {sort_by}, sortOrder: {sort_order}")
+        result = jiosaavn.get_artist_songs(artist_id, sort_by, sort_order)
+        status_code = 200 if result.get('success') else 500
+        return jsonify(result), status_code
+    except Exception as e:
+        logger.error(f"Error in artist_songs_route: {str(e)}")
+        return jsonify({
+            "success": False,
+            "error": 'An error occurred while processing your request'
+        }), 500
+
+
+@app.route('/artist/albums/')
+def artist_albums_route():
+    try:
+        artist_id = request.args.get('id')
+        sort_by = request.args.get('sortBy', 'latest')
+        sort_order = request.args.get('sortOrder', 'desc')
+        
+        if not artist_id:
+            return jsonify({
+                "success": False,
+                "error": 'Artist ID is required!'
+            }), 400
+        
+        logger.info(f"Artist albums for: {artist_id}, sortBy: {sort_by}, sortOrder: {sort_order}")
+        result = jiosaavn.get_artist_albums(artist_id, sort_by, sort_order)
+        status_code = 200 if result.get('success') else 500
+        return jsonify(result), status_code
+    except Exception as e:
+        logger.error(f"Error in artist_albums_route: {str(e)}")
         return jsonify({
             "success": False,
             "error": 'An error occurred while processing your request'

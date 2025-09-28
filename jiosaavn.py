@@ -5,6 +5,7 @@ import json
 from traceback import print_exc
 import re
 import logging
+import urllib.parse
 
 logger = logging.getLogger(__name__)
 
@@ -171,17 +172,106 @@ def get_song_id(url):
         return res.text.split('"song":{"type":"')[1].split('","image":')[0].split('"id":"')[-1]
 
 
-def get_album(album_id, lyrics):
-    songs_json = []
+def get_album_by_link(album_link, lyrics):
+    """Fetch album details from saavn.dev using the album link and normalize.
+    - Collapse image arrays to best URL (root and songs)
+    - Replace artists object with single primaryartist string (root and songs)
+    - Reduce downloadUrl arrays to one best URL on songs
+    """
     try:
-        response = requests.get(endpoints.album_details_base_url+album_id)
-        if response.status_code == 200:
-            songs_json = response.text.encode().decode('unicode-escape')
-            songs_json = json.loads(songs_json)
-            return helper.format_album(songs_json, lyrics)
+        if not album_link:
+            return {"success": False, "error": "Album link is required"}
+        # Ensure the album link is URL-encoded
+        encoded_link = urllib.parse.quote(album_link, safe='')
+        url = f"{endpoints.album_details_base_url}{encoded_link}"
+        logger.info(f"Making request to: {url}")
+        response = requests.get(url, timeout=20)
+        response.raise_for_status()
+        data = response.json()
+        if not isinstance(data, dict):
+            return {"success": False, "error": "Invalid response"}
+
+        payload = (data or {}).get('data') or {}
+
+        # Root image collapse
+        root_img = _select_highest_quality_image(payload.get('image'))
+        if root_img:
+            payload['image'] = root_img.get('url') if isinstance(root_img, dict) else root_img
+
+        # Root artists -> primaryartist string
+        try:
+            artists_block = payload.get('artists') or {}
+            primary_list = artists_block.get('primary') or []
+            names = []
+            for a in primary_list:
+                name = (a or {}).get('name')
+                if name:
+                    names.append(name)
+            if names:
+                payload['primaryartist'] = ', '.join(names)
+            if 'artists' in payload:
+                del payload['artists']
+        except Exception:
+            try:
+                if 'artists' in payload:
+                    del payload['artists']
+            except Exception:
+                pass
+
+        # Songs normalization
+        songs = payload.get('songs') or []
+        normalized_songs = []
+        for s in songs:
+            song = dict(s or {})
+            # Image collapse
+            img = _select_highest_quality_image(song.get('image'))
+            if img:
+                song['image'] = img.get('url') if isinstance(img, dict) else img
+            # Download best URL
+            best_dl = _select_highest_quality_download_url(song.get('downloadUrl'))
+            if best_dl:
+                song['media_url'] = best_dl
+            # Remove the original downloadUrl array if present
+            try:
+                if 'downloadUrl' in song:
+                    del song['downloadUrl']
+            except Exception:
+                pass
+            # Artists -> primaryartist string
+            try:
+                s_art = song.get('artists') or {}
+                prim = s_art.get('primary') or []
+                s_names = []
+                for a in prim:
+                    nm = (a or {}).get('name')
+                    if nm:
+                        s_names.append(nm)
+                if s_names:
+                    song['primaryartist'] = ', '.join(s_names)
+                if 'artists' in song:
+                    del song['artists']
+            except Exception:
+                try:
+                    if 'artists' in song:
+                        del song['artists']
+                except Exception:
+                    pass
+            # Remove redundant nested album object from song if present
+            try:
+                if 'album' in song:
+                    del song['album']
+            except Exception:
+                pass
+            normalized_songs.append(song)
+        payload['songs'] = normalized_songs
+
+        return {"success": bool(data.get('success', True)), "data": payload}
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Request error in get_album_by_link: {str(e)}")
+        return {"success": False, "error": f"Request failed: {str(e)}"}
     except Exception as e:
-        print(e)
-        return None
+        logger.error(f"Unexpected error in get_album_by_link: {str(e)}")
+        return {"success": False, "error": "An unexpected error occurred"}
 
 
 def get_album_id(input_url):
@@ -666,6 +756,182 @@ def search_albums(query):
         return {"success": False, "error": f"Request failed: {str(e)}"}
     except Exception as e:
         logger.error(f"Unexpected error in search_albums: {str(e)}")
+        return {"success": False, "error": "An unexpected error occurred"}
+
+
+def get_artist_songs(artist_id, sort_by="latest", sort_order="desc"):
+    """Fetch and normalize artist songs with sorting options.
+    - Collapse image arrays to best URL
+    - Replace artists object with single primaryartist string
+    - Reduce downloadUrl arrays to one best URL as media_url
+    - Remove album and downloadUrl fields
+    """
+    if not artist_id:
+        return {"success": False, "error": "Artist ID is required"}
+    
+    # Validate sort parameters
+    valid_sort_by = ["latest", "popularity"]
+    valid_sort_order = ["asc", "desc"]
+    
+    if sort_by not in valid_sort_by:
+        return {"success": False, "error": f"Invalid sortBy. Must be one of: {valid_sort_by}"}
+    if sort_order not in valid_sort_order:
+        return {"success": False, "error": f"Invalid sortOrder. Must be one of: {valid_sort_order}"}
+    
+    try:
+        url = f"{endpoints.artist_songs_base_url}{artist_id}/songs?sortBy={sort_by}&sortOrder={sort_order}"
+        logger.info(f"Making request to: {url}")
+        response = requests.get(url, timeout=20)
+        response.raise_for_status()
+        data = response.json()
+        if not isinstance(data, dict):
+            return {"success": False, "error": "Invalid response"}
+
+        payload = (data or {}).get('data') or {}
+        songs = payload.get('songs') or []
+        normalized_songs = []
+        
+        for song in songs:
+            song_obj = dict(song or {})
+            
+            # Image collapse
+            img = _select_highest_quality_image(song_obj.get('image'))
+            if img:
+                song_obj['image'] = img.get('url') if isinstance(img, dict) else img
+            
+            # Download best URL -> media_url
+            best_dl = _select_highest_quality_download_url(song_obj.get('downloadUrl'))
+            if best_dl:
+                song_obj['media_url'] = best_dl
+            
+            # Remove original downloadUrl array
+            try:
+                if 'downloadUrl' in song_obj:
+                    del song_obj['downloadUrl']
+            except Exception:
+                pass
+            
+            # Artists -> primaryartist string
+            try:
+                artists_block = song_obj.get('artists') or {}
+                primary_list = artists_block.get('primary') or []
+                names = []
+                for a in primary_list:
+                    name = (a or {}).get('name')
+                    if name:
+                        names.append(name)
+                if names:
+                    song_obj['primaryartist'] = ', '.join(names)
+                if 'artists' in song_obj:
+                    del song_obj['artists']
+            except Exception:
+                try:
+                    if 'artists' in song_obj:
+                        del song_obj['artists']
+                except Exception:
+                    pass
+            
+            # Remove redundant album object
+            try:
+                if 'album' in song_obj:
+                    del song_obj['album']
+            except Exception:
+                pass
+            
+            normalized_songs.append(song_obj)
+        
+        payload['songs'] = normalized_songs
+        return {"success": bool(data.get('success', True)), "data": payload}
+        
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Request error in get_artist_songs: {str(e)}")
+        return {"success": False, "error": f"Request failed: {str(e)}"}
+    except Exception as e:
+        logger.error(f"Unexpected error in get_artist_songs: {str(e)}")
+        return {"success": False, "error": "An unexpected error occurred"}
+
+
+def get_artist_albums(artist_id, sort_by="latest", sort_order="desc"):
+    """Fetch and normalize artist albums with sorting options.
+    - Collapse image arrays to best URL
+    - Replace artists object with single primaryartist string if present
+    - Rename url -> album_url when the item is an album
+    """
+    if not artist_id:
+        return {"success": False, "error": "Artist ID is required"}
+
+    valid_sort_by = ["latest", "popularity"]
+    valid_sort_order = ["asc", "desc"]
+
+    if sort_by not in valid_sort_by:
+        return {"success": False, "error": f"Invalid sortBy. Must be one of: {valid_sort_by}"}
+    if sort_order not in valid_sort_order:
+        return {"success": False, "error": f"Invalid sortOrder. Must be one of: {valid_sort_order}"}
+
+    try:
+        url = f"{endpoints.artist_albums_base_url}{artist_id}/albums?sortBy={sort_by}&sortOrder={sort_order}"
+        logger.info(f"Making request to: {url}")
+        response = requests.get(url, timeout=20)
+        response.raise_for_status()
+        data = response.json()
+        if not isinstance(data, dict):
+            return {"success": False, "error": "Invalid response"}
+
+        payload = (data or {}).get('data') or {}
+        albums = payload.get('albums') or payload.get('results') or []
+        normalized = []
+
+        for item in albums:
+            obj = dict(item or {})
+            # Collapse image to best url
+            img = _select_highest_quality_image(obj.get('image'))
+            if img:
+                obj['image'] = img.get('url') if isinstance(img, dict) else img
+
+            # If artists block is present, keep only primary names as string
+            try:
+                artists_block = obj.get('artists') or {}
+                primary_list = artists_block.get('primary') or []
+                names = []
+                for a in primary_list:
+                    name = (a or {}).get('name')
+                    if name:
+                        names.append(name)
+                if names:
+                    obj['primaryartist'] = ', '.join(names)
+                if 'artists' in obj:
+                    del obj['artists']
+            except Exception:
+                try:
+                    if 'artists' in obj:
+                        del obj['artists']
+                except Exception:
+                    pass
+
+            # Rename url -> album_url
+            try:
+                if 'url' in obj and 'album_url' not in obj:
+                    obj['album_url'] = obj.get('url')
+                    del obj['url']
+            except Exception:
+                pass
+
+            normalized.append(obj)
+
+        payload['albums'] = normalized
+        # Remove legacy 'results' if present to avoid confusion
+        try:
+            if 'results' in payload:
+                del payload['results']
+        except Exception:
+            pass
+        return {"success": bool(data.get('success', True)), "data": payload}
+
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Request error in get_artist_albums: {str(e)}")
+        return {"success": False, "error": f"Request failed: {str(e)}"}
+    except Exception as e:
+        logger.error(f"Unexpected error in get_artist_albums: {str(e)}")
         return {"success": False, "error": "An unexpected error occurred"}
 
 
