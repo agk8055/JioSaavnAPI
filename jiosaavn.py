@@ -51,6 +51,102 @@ def search_for_song(query, lyrics, songdata):
         return None
 
 
+def search_songs_new_api(query, limit=10):
+    """
+    Search for songs using the new Cloudflare Worker API endpoint.
+    Returns formatted song data matching the existing API structure.
+    """
+    try:
+        if query.startswith('http') and 'saavn.com' in query:
+            id = get_song_id(query)
+            return get_song(id, False)
+        
+        url = f"{endpoints.song_search_base_url}{urllib.parse.quote(query)}&limit={limit}"
+        logger.info(f"Making request to: {url}")
+        response = requests.get(url, timeout=10)
+        response.raise_for_status()
+        
+        response_data = response.json()
+        
+        if not response_data.get('success') or 'data' not in response_data:
+            logger.error(f"Unexpected response format: {response_data}")
+            return []
+        
+        songs_data = response_data['data'].get('results', [])
+        formatted_songs = []
+        
+        for song in songs_data:
+            formatted_song = transform_song_data(song)
+            if formatted_song:
+                formatted_songs.append(formatted_song)
+        
+        return formatted_songs
+        
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Request error in search_songs_new_api: {str(e)}")
+        return []
+    except json.JSONDecodeError as e:
+        logger.error(f"JSON decode error in search_songs_new_api: {str(e)}")
+        return []
+    except Exception as e:
+        logger.error(f"Unexpected error in search_songs_new_api: {str(e)}")
+        return []
+
+
+def transform_song_data(song_data):
+    """
+    Transform song data from the new API format to match the existing format.
+    """
+    try:
+        # Extract primary artists
+        primary_artists = []
+        if 'artists' in song_data and 'primary' in song_data['artists']:
+            for artist in song_data['artists']['primary']:
+                primary_artists.append(artist['name'])
+        
+        # Get highest quality image
+        image_url = ""
+        if 'image' in song_data and song_data['image']:
+            # Sort by quality and get the highest
+            sorted_images = sorted(song_data['image'], key=lambda x: int(x['quality'].split('x')[0]), reverse=True)
+            image_url = sorted_images[0]['url'] if sorted_images else ""
+        
+        # Get highest quality download URL
+        media_url = ""
+        if 'downloadUrl' in song_data and song_data['downloadUrl']:
+            # Sort by quality and get the highest
+            sorted_urls = sorted(song_data['downloadUrl'], key=lambda x: int(x['quality'].replace('kbps', '')), reverse=True)
+            media_url = sorted_urls[0]['url'] if sorted_urls else ""
+        
+        # Format the response to match existing structure
+        formatted_song = {
+            'id': song_data.get('id', ''),
+            'song': helper.format(song_data.get('name', '')),
+            'album': helper.format(song_data.get('album', {}).get('name', '')),
+            'year': song_data.get('year', ''),
+            'releaseDate': song_data.get('releaseDate', ''),
+            'duration': song_data.get('duration', 0),
+            'label': song_data.get('label', ''),
+            'explicitContent': song_data.get('explicitContent', False),
+            'playCount': song_data.get('playCount', 0),
+            'language': song_data.get('language', ''),
+            'hasLyrics': song_data.get('hasLyrics', False),
+            'lyricsId': song_data.get('lyricsId', ''),
+            'url': song_data.get('url', ''),
+            'copyright': song_data.get('copyright', ''),
+            'primary_artists': helper.format(', '.join(primary_artists)),
+            'image': image_url,
+            'media_url': media_url,
+            '320kbps': 'true' if '320kbps' in media_url else 'false'
+        }
+        
+        return formatted_song
+        
+    except Exception as e:
+        logger.error(f"Error transforming song data: {str(e)}")
+        return None
+
+
 def get_song(id, lyrics):
     try:
         song_details_base_url = endpoints.song_details_base_url+id

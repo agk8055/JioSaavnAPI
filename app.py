@@ -43,18 +43,22 @@ def home():
 @app.route('/song/')
 def search():
     try:
-        lyrics = False
-        songdata = True
         query = request.args.get('query')
-        lyrics_ = request.args.get('lyrics')
-        songdata_ = request.args.get('songdata')
-        if lyrics_ and lyrics_.lower() != 'false':
-            lyrics = True
-        if songdata_ and songdata_.lower() != 'true':
-            songdata = False
+        limit = request.args.get('limit', 10)  # Default limit is 10
+        
+        # Convert limit to integer, with validation
+        try:
+            limit = int(limit)
+            if limit < 1:
+                limit = 10
+            elif limit > 50:  # Set a reasonable maximum
+                limit = 50
+        except (ValueError, TypeError):
+            limit = 10
+        
         if query:
-            logger.info(f"Searching for song: {query}")
-            result = jiosaavn.search_for_song(query, lyrics, songdata)
+            logger.info(f"Searching for song: {query} with limit: {limit}")
+            result = jiosaavn.search_songs_new_api(query, limit)
             return jsonify(result)
         else:
             error = {

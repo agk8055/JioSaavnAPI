@@ -29,3 +29,6 @@ artist_songs_base_url = "https://jiosaavn-api.alangeokurian10.workers.dev/api/ar
 
 # Artist albums (Cloudflare Worker) endpoint
 artist_albums_base_url = "https://jiosaavn-api.alangeokurian10.workers.dev/api/artists/"
+
+# Song search (Cloudflare Worker) endpoint
+song_search_base_url = "https://jiosaavn-api.alangeokurian10.workers.dev/api/search/songs?query="
